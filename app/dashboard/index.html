@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Classifier</title>
+    <style>
+        .container { max-width: 600px; margin: 2rem auto; padding: 20px; text-align: center; }
+        #preview { max-width: 300px; margin: 1rem 0; border: 2px solid #ddd; border-radius: 4px; }
+        .result { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .loader { display: none; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Classifier</h1>
+        <form onsubmit="return handleSubmit(event)">
+            <input type="file" id="imageInput" accept="image/png, image/jpeg" required>
+            <button type="submit" id="submitBtn">Predict</button>
+        </form>
+        
+        <div class="loader" id="loader"></div>
+        <img id="preview" style="display: none;">
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const submitBtn = document.getElementById('submitBtn');
+        const resultDiv = document.getElementById('result');
+        const previewImg = document.getElementById('preview');
+        const loader = document.getElementById('loader');
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            resetUI();
+            
+            const file = document.getElementById('imageInput').files[0];
+            if (!file) {
+                showError('Please select an image first');
+                return false;
+            }
+
+            showPreview(file);
+            submitBtn.disabled = true;
+            loader.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(handleResponse)
+            .then(showResults)
+            .catch(handleError)
+            .finally(() => {
+                submitBtn.disabled = false;
+                loader.style.display = 'none';
+            });
+
+            return false;
+        }
+
+        function resetUI() {
+            resultDiv.textContent = '';
+            previewImg.style.display = 'none';
+        }
+
+        function showPreview(file) {
+            previewImg.src = URL.createObjectURL(file);
+            previewImg.style.display = 'block';
+        }
+
+        function handleResponse(response) {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || 'Server error');
+                });
+            }
+            return response.json();
+        }
+
+        function showResults(data) {
+            resultDiv.innerHTML = `
+                <strong>Prediction:</strong> ${data.class}<br>
+                <strong>Confidence:</strong> ${data.confidence}%<br>
+                ${data.preview ? `<img src="${data.preview}" style="max-width: 200px; margin-top: 10px;">` : ''}
+            `;
+        }
+
+        function handleError(error) {
+            console.error('Error:', error);
+            resultDiv.textContent = `Error: ${error.message}`;
+        }
+    </script>
+</body>
+</html>
