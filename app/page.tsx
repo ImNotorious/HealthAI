@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Brain, Microscope, ShieldCheck, Zap } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { app } from '@/firebase/config';
+import app from '@/firebase/config';
 
 const auth = getAuth(app);
 
